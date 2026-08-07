@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-07T02:19:08Z",
+  "generated_at": "2026-08-07T02:21:31Z",
   "repository": "x1kong-ops/1",
   "memory_model": "external_versioned_project_memory",
   "status": "deployed_and_directly_readable",
@@ -40,6 +40,12 @@
     "weekly_mode": "full_public_metadata_scan_on_sunday",
     "metadata_only": true,
     "background_runner": "GitHub Actions"
+  },
+  "automatic_materialization": {
+    "checked_at": "2026-08-07T02:21:31Z",
+    "refresh_status_present": false,
+    "first_full_scan_observed": false,
+    "state": "workflow_deployed_first_full_scan_result_not_yet_observed"
   },
   "retrieval_policy": {
     "read_curated_market_memory_first": true,
