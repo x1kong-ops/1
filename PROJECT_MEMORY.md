@@ -4,7 +4,7 @@
 
 ## 何时应先读取本仓库
 
-出现以下任务时，应先读取 `PROJECT_MEMORY_STATUS.json`，再检索相关数据文件：
+出现以下任务时，应先读取 `memory/IMMEDIATE_MEMORY_STATUS.json`，再检索相关数据文件：
 
 - 复盘果老星网站此前对美股、半导体、黄金、原油、美元、宏观周期或具体日期窗口的判断；
 - 查找某篇文章、人物、标题、分类、发布日期或原始网址；
@@ -14,14 +14,14 @@
 
 ## 检索优先级
 
-1. `PROJECT_MEMORY_STATUS.json`：确认更新时间、覆盖范围、完整性和失败状态。
-2. `market_claims.jsonl`：结构化市场判断、日期窗口、方向、目标值与验证状态。
-3. `articles.jsonl`：77篇第一阶段文章的人工摘要、主题、资产和来源链接。
-4. `figures.jsonl`：图表语境、图注与视觉复核状态。
-5. `memory/site_index_recent.jsonl`：最近发布或修改的公开文章元数据。
-6. `memory/site_index_shards/*.jsonl`：全站标题、日期、分类和网址索引；仅用于发现与定位。
-7. `site_index.jsonl`：第一至第三阶段的人工种子索引。
-8. `phase3_profiles.jsonl` 与 `phase3_queue.jsonl`：隔离的人物专题库和候选队列。
+1. `memory/IMMEDIATE_MEMORY_STATUS.json`：即时核心层、覆盖数量、分片路径和自动更新配置。
+2. `memory/curated_market_claims.*.jsonl`：133条结构化市场判断、日期窗口、方向、目标值与验证状态。
+3. `memory/curated_articles.*.jsonl`：77篇第一阶段文章的人工摘要、主题、资产和来源链接。
+4. 自动物化后的 `PROJECT_MEMORY_STATUS.json`：完整引导包和实时公开元数据扫描状态。
+5. 自动物化后的 `figures.jsonl`：79条图表语境、图注与视觉复核状态。
+6. `memory/site_index_recent.jsonl`：最近发布或修改的公开文章元数据。
+7. `memory/site_index_shards/*.jsonl`：全站标题、日期、分类和网址索引；仅用于发现与定位。
+8. 自动物化后的 `phase3_profiles.jsonl` 与 `phase3_queue.jsonl`：隔离的人物专题库和候选队列。
 
 ## 证据与安全边界
 
@@ -42,6 +42,8 @@ GitHub Actions 会在多伦多时间每天 08:17 检查更新：
 - 仅请求公开的 WordPress 标题、日期、分类、文章ID和网址；
 - 运行结果写入 `refresh_status.json`、`memory/site_index_catalog.json` 和分片索引；
 - 所有变更由自动化提交，保留 Git 历史。
+
+即时核心层已经直接提交到仓库，因此即使首次完整抓取尚未完成，也能立即检索77篇文章摘要和133条市场主张。
 
 ## 后续分析的标准流程
 
