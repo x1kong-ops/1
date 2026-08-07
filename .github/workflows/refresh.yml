@@ -1,0 +1,181 @@
+name: Refresh Guolaoxing project memory
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "bootstrap/**"
+      - "bootstrap_memory.py"
+      - "refresh_metadata.py"
+      - "PROJECT_MEMORY.md"
+      - "AGENTS.md"
+      - "README.md"
+      - ".github/workflows/refresh.yml"
+  schedule:
+    - cron: "17 8 * * *"
+      timezone: "America/Toronto"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Refresh mode"
+        required: true
+        default: "auto"
+        type: choice
+        options:
+          - auto
+          - full
+          - incremental
+
+permissions:
+  contents: write
+
+concurrency:
+  group: guolaoxing-project-memory-refresh
+  cancel-in-progress: false
+
+env:
+  PYTHONUNBUFFERED: "1"
+  GUOLAOXING_DELAY_SECONDS: "1.25"
+
+jobs:
+  refresh:
+    name: Materialize, refresh, validate, and commit
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Check out the memory repository
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Materialize the curated core when needed
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! -f articles.jsonl ]]; then
+            python bootstrap_memory.py
+          else
+            python bootstrap_memory.py --status-only
+          fi
+
+      - name: Run offline refresh-engine tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile bootstrap_memory.py refresh_metadata.py
+          python refresh_metadata.py --self-test
+
+      - name: Select refresh mode
+        id: mode
+        shell: bash
+        run: |
+          set -euo pipefail
+          requested="auto"
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            requested="${{ github.event.inputs.mode }}"
+          fi
+
+          if [[ "${requested}" != "auto" ]]; then
+            mode="${requested}"
+          elif [[ ! -f memory/site_index_catalog.json ]]; then
+            mode="full"
+          elif [[ "$(date -u +%u)" == "7" ]]; then
+            mode="full"
+          else
+            mode="incremental"
+          fi
+
+          echo "mode=${mode}" | tee -a "${GITHUB_OUTPUT}"
+
+      - name: Refresh public metadata
+        id: refresh
+        shell: bash
+        run: |
+          set +e
+          python refresh_metadata.py --mode "${{ steps.mode.outputs.mode }}"
+          exit_code=$?
+          set -e
+          echo "exit_code=${exit_code}" | tee -a "${GITHUB_OUTPUT}"
+          exit 0
+
+      - name: Regenerate and validate memory status
+        shell: bash
+        run: |
+          set -euo pipefail
+          python bootstrap_memory.py --status-only
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('.')
+          required = [
+              'PROJECT_MEMORY_STATUS.json',
+              'PROJECT_MEMORY_STATUS.md',
+              'articles.jsonl',
+              'market_claims.jsonl',
+              'figures.jsonl',
+              'site_index.jsonl',
+              'phase3_profiles.jsonl',
+              'phase3_queue.jsonl',
+              'refresh_status.json',
+          ]
+          missing = [name for name in required if not (root / name).is_file()]
+          if missing:
+              raise SystemExit(f'Missing required files: {missing}')
+
+          status = json.loads((root / 'PROJECT_MEMORY_STATUS.json').read_text(encoding='utf-8'))
+          expected = {
+              'articles.jsonl': 77,
+              'market_claims.jsonl': 133,
+              'figures.jsonl': 79,
+              'site_index.jsonl': 122,
+              'phase3_profiles.jsonl': 20,
+              'phase3_queue.jsonl': 45,
+          }
+          if status.get('core_counts') != expected:
+              raise SystemExit(f'Unexpected curated-core counts: {status.get("core_counts")}')
+          if not status.get('core_validation_ok'):
+              raise SystemExit('Curated-core validation is not OK')
+          print('Repository memory validation: ok')
+          PY
+
+      - name: Publish run summary
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f PROJECT_MEMORY_STATUS.md ]]; then
+            cat PROJECT_MEMORY_STATUS.md >> "${GITHUB_STEP_SUMMARY}"
+          fi
+          if [[ "${{ steps.refresh.outputs.exit_code }}" != "0" ]]; then
+            printf '\n> Metadata refresh failed; the error report was preserved and the next scheduled run will retry.\n' >> "${GITHUB_STEP_SUMMARY}"
+          fi
+
+      - name: Commit materialized and refreshed memory
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No knowledge-base changes to commit."
+            exit 0
+          fi
+          git commit -m "chore(memory): refresh Guolaoxing project memory"
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+      - name: Surface metadata refresh failure
+        if: steps.refresh.outputs.exit_code != '0'
+        shell: bash
+        run: |
+          echo "The curated core was deployed, but the live metadata refresh failed. See refresh_status.json." >&2
+          exit 1
