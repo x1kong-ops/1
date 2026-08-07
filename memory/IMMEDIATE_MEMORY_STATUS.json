@@ -1,0 +1,51 @@
+{
+  "generated_at": "2026-08-07T02:19:08Z",
+  "repository": "x1kong-ops/1",
+  "memory_model": "external_versioned_project_memory",
+  "status": "deployed_and_directly_readable",
+  "curated_articles": {
+    "record_count": 77,
+    "shards": [
+      "memory/curated_articles.00.jsonl",
+      "memory/curated_articles.01.jsonl",
+      "memory/curated_articles.02.jsonl"
+    ]
+  },
+  "curated_market_claims": {
+    "record_count": 133,
+    "shards": [
+      "memory/curated_market_claims.00.jsonl",
+      "memory/curated_market_claims.01.jsonl",
+      "memory/curated_market_claims.02.jsonl",
+      "memory/curated_market_claims.03.jsonl"
+    ]
+  },
+  "full_bootstrap": {
+    "archive_sha256": "70e0dafa2b3c09ef7eb783ebc92d695475a08e1ac05858e25f4465ee9e0a8409",
+    "part_count": 10,
+    "includes": {
+      "articles": 77,
+      "market_claims": 133,
+      "figure_contexts": 79,
+      "seed_site_index": 122,
+      "phase3_profiles_isolated": 20,
+      "phase3_queue": 45
+    }
+  },
+  "scheduled_refresh": {
+    "workflow": ".github/workflows/refresh.yml",
+    "timezone": "America/Toronto",
+    "local_time": "08:17",
+    "daily_mode": "incremental_with_72_hour_overlap",
+    "weekly_mode": "full_public_metadata_scan_on_sunday",
+    "metadata_only": true,
+    "background_runner": "GitHub Actions"
+  },
+  "retrieval_policy": {
+    "read_curated_market_memory_first": true,
+    "xingming_archive_isolated": true,
+    "astrology_is_non_scientific_source_context": true,
+    "current_market_facts_require_fresh_primary_sources": true
+  },
+  "important_limit": "This is retrieval-backed project memory, not model-parameter memory."
+}
